@@ -57,20 +57,21 @@ export default function ReportPage() {
   const [data, setData] = useState('{ "notes": "" }')
   const [message, setMessage] = useState('')
 
+  // ✅ Preload the appropriate template when incident is selected
   useEffect(() => {
-    const loadTemplate = async () => {
-      if (!incidentType) return
-      const filename = incidentType.replace(/\s+/g, '_').replace(/[^\w]/g, '') + '.json'
-      try {
-        const res = await fetch(`/templates/${filename}`)
-        if (!res.ok) throw new Error('Template not found')
-        const json = await res.json()
-        setData(JSON.stringify(json, null, 2))
-      } catch (err) {
-        setData('{ "notes": "" }')
-      }
+    if (incidentType) {
+      const safeName = incidentType.replace(/\s+/g, '_').replace(/[^\w]/g, '')
+      fetch(`/templates/${safeName}.json`)
+        .then(res => res.ok ? res.json() : null)
+        .then(json => {
+          if (json) {
+            setData(JSON.stringify(json, null, 2))
+          } else {
+            setData('{ "notes": "" }')
+          }
+        })
+        .catch(() => setData('{ "notes": "" }'))
     }
-    loadTemplate()
   }, [incidentType])
 
   const handleSubmit = async (e) => {
@@ -90,7 +91,8 @@ export default function ReportPage() {
       const result = await res.json()
       setMessage(result.message)
     } catch (err) {
-      setMessage('Error submitting report')
+      console.error(err)
+      setMessage('Failed to submit report')
     }
   }
 
@@ -107,7 +109,7 @@ export default function ReportPage() {
           ))}
         </select>
         <input placeholder="Location (lat,lng)" value={location} onChange={e => setLocation(e.target.value)} />
-        <textarea rows={8} value={data} onChange={e => setData(e.target.value)} placeholder='{"notes": ""}' />
+        <textarea rows={8} value={data} onChange={e => setData(e.target.value)} />
         <button type="submit">Submit Report</button>
       </form>
       {message && <p style={{ marginTop: '1rem' }}>{message}</p>}
