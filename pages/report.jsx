@@ -1,4 +1,5 @@
-import { useState } from 'react'
+// pages/report.jsx
+import { useState, useEffect } from 'react'
 
 const incidentOptions = [
   "Abuse Of The Elderly",
@@ -46,7 +47,7 @@ const incidentOptions = [
   "Vandalism / Property Damage",
   "Warrant Execution",
   "Witness Intimidation Or Tampering"
-];
+]
 
 export default function ReportPage() {
   const [officerId, setOfficerId] = useState('')
@@ -55,6 +56,26 @@ export default function ReportPage() {
   const [location, setLocation] = useState('')
   const [data, setData] = useState('{ "notes": "" }')
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      if (incidentType) {
+        const filename = incidentType.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_') + '.json'
+        try {
+          const res = await fetch(`/templates/${filename}`)
+          if (res.ok) {
+            const json = await res.json()
+            setData(JSON.stringify(json, null, 2))
+          } else {
+            setData('{ "notes": "" }')
+          }
+        } catch {
+          setData('{ "notes": "" }')
+        }
+      }
+    }
+    fetchTemplate()
+  }, [incidentType])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -82,16 +103,34 @@ export default function ReportPage() {
     <div style={{ padding: '2rem' }}>
       <h1>Tribal Shield: Submit Report</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 600 }}>
-        <input placeholder="Officer ID" value={officerId} onChange={e => setOfficerId(e.target.value)} required />
-        <input placeholder="Officer Name" value={officerName} onChange={e => setOfficerName(e.target.value)} />
+        <input
+          placeholder="Officer ID"
+          value={officerId}
+          onChange={e => setOfficerId(e.target.value)}
+          required
+        />
+        <input
+          placeholder="Officer Name"
+          value={officerName}
+          onChange={e => setOfficerName(e.target.value)}
+        />
         <select value={incidentType} onChange={e => setIncidentType(e.target.value)} required>
           <option value="">Choose Incident Type</option>
           {incidentOptions.map((type, idx) => (
             <option key={idx} value={type}>{type}</option>
           ))}
         </select>
-        <input placeholder="Location (lat,lng)" value={location} onChange={e => setLocation(e.target.value)} />
-        <textarea rows={6} value={data} onChange={e => setData(e.target.value)} placeholder='{"notes": "Observed incident..."}' />
+        <input
+          placeholder="Location (lat,lng)"
+          value={location}
+          onChange={e => setLocation(e.target.value)}
+        />
+        <textarea
+          rows={8}
+          value={data}
+          onChange={e => setData(e.target.value)}
+          placeholder='{"notes": "Observed incident..."}'
+        />
         <button type="submit">Submit Report</button>
       </form>
       {message && <p style={{ marginTop: '1rem' }}>{message}</p>}
